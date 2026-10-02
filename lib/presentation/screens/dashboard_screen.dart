@@ -103,6 +103,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     await showDialog(
       context: context,
+      useRootNavigator: true, // Fix: thoát khỏi context của BottomNav
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setDialogState) => AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
@@ -176,8 +177,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _navigateToMealDetail(String mealType, String mealName) {
-    Navigator.push(
-      context,
+    Navigator.of(context, rootNavigator: true).push( // Fix: dùng root navigator
       MaterialPageRoute(
         builder: (_) => MealDetailScreen(
           mealType: mealType,
@@ -185,7 +185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           date: _todayDate,
         ),
       ),
-    ).then((_) => _loadData()); // Reload khi quay lại
+    ).then((_) => _loadData());
   }
 
   @override

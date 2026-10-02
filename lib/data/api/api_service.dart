@@ -111,10 +111,12 @@ class ApiService {
   // ==================== WATER ====================
 
   /// POST /api/water/add?userId=&amountMl=
+  /// Backend trả về plain String, không phải JSON
   Future<void> addWater(int userId, int amountMl) async {
     await _dio.post(
       'api/water/add',
       queryParameters: {'userId': userId, 'amountMl': amountMl},
+      options: Options(responseType: ResponseType.plain),
     );
   }
 
