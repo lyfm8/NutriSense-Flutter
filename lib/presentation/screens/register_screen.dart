@@ -1,12 +1,86 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../widgets/auth_gradient_background.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/gradient_button.dart';
 import 'survey_screen.dart';
 
-class RegisterScreen extends StatelessWidget {
+/// Màn hình đăng ký với logic đầy đủ
+/// Tương đương: RegisterActivity.java
+class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
+
+  @override
+  State<RegisterScreen> createState() => _RegisterScreenState();
+}
+
+class _RegisterScreenState extends State<RegisterScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
+
+  bool _isLoading = false;
+  final _authRepo = AuthRepository();
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _handleRegister() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+    final confirmPassword = _confirmPasswordController.text.trim();
+
+    // Validation
+    if (email.isEmpty || password.isEmpty || confirmPassword.isEmpty) {
+      _showError('Vui lòng nhập đủ thông tin');
+      return;
+    }
+    if (password != confirmPassword) {
+      _showError('Mật khẩu xác nhận không khớp!');
+      return;
+    }
+    if (password.length < 6) {
+      _showError('Mật khẩu phải có ít nhất 6 ký tự');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    final result = await _authRepo.registerWithEmail(
+      email: email,
+      password: password,
+    );
+
+    if (!mounted) return;
+    setState(() => _isLoading = false);
+
+    if (result.success) {
+      // Sau đăng ký → luôn đến SurveyScreen để nhập thông tin cá nhân
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const SurveyScreen()),
+      );
+    } else {
+      _showError(result.errorMessage ?? 'Đăng ký thất bại');
+    }
+  }
+
+  void _showError(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: AppColors.red600,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +103,7 @@ class RegisterScreen extends StatelessWidget {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Logo Container
+                          // Logo
                           Container(
                             width: 80,
                             height: 80,
@@ -51,8 +125,6 @@ class RegisterScreen extends StatelessWidget {
                             ),
                           ),
                           const SizedBox(height: 24),
-
-                          // Title
                           const Text(
                             'Tạo tài khoản mới',
                             style: TextStyle(
@@ -63,39 +135,38 @@ class RegisterScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 32),
 
-                          // Email Field
-                          const CustomTextField(
+                          // Email
+                          CustomTextField(
                             hintText: 'Email',
                             startIcon: Icons.email_outlined,
                             keyboardType: TextInputType.emailAddress,
+                            controller: _emailController,
                           ),
                           const SizedBox(height: 16),
 
-                          // Password Field
-                          const CustomTextField(
+                          // Password
+                          CustomTextField(
                             hintText: 'Mật khẩu (ít nhất 6 ký tự)',
                             startIcon: Icons.lock_outline,
                             isPassword: true,
+                            controller: _passwordController,
                           ),
                           const SizedBox(height: 16),
 
-                          // Confirm Password Field
-                          const CustomTextField(
+                          // Confirm Password
+                          CustomTextField(
                             hintText: 'Xác nhận mật khẩu',
                             startIcon: Icons.lock_outline,
                             isPassword: true,
+                            controller: _confirmPasswordController,
                           ),
                           const SizedBox(height: 24),
 
                           // Register Button
                           GradientButton(
                             text: 'Đăng ký',
-                            onPressed: () {
-                              Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(builder: (context) => const SurveyScreen()),
-                              );
-                            },
+                            isLoading: _isLoading,
+                            onPressed: _isLoading ? null : _handleRegister,
                           ),
                           const SizedBox(height: 24),
 
@@ -106,14 +177,10 @@ class RegisterScreen extends StatelessWidget {
                               const Text(
                                 'Đã có tài khoản? ',
                                 style: TextStyle(
-                                  color: AppColors.gray600,
-                                  fontSize: 14,
-                                ),
+                                    color: AppColors.gray600, fontSize: 14),
                               ),
                               GestureDetector(
-                                onTap: () {
-                                  Navigator.pop(context);
-                                },
+                                onTap: () => Navigator.pop(context),
                                 child: const Text(
                                   'Đăng nhập',
                                   style: TextStyle(

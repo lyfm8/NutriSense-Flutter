@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import '../constants/app_constants.dart';
+import '../../core/constants/app_constants.dart';
 
 /// HTTP Client cho toàn bộ ứng dụng
 /// Tương đương: RetrofitClient.java
