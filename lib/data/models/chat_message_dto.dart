@@ -21,15 +21,15 @@ class ChatMessageDto {
     return ChatMessageDto(
       id: json['id'] as int?,
       userId: json['userId'] as int?,
-      role: json['role'] as String?,
-      content: json['content'] as String?,
+      role: json['sender'] as String? ?? json['role'] as String?,
+      content: json['text'] as String? ?? json['content'] as String?,
       createdAt: json['createdAt'] as String?,
       isRead: json['isRead'] as bool?,
     );
   }
 
-  bool get isFromUser => role == 'user';
-  bool get isFromAssistant => role == 'assistant';
+  bool get isFromUser => role?.toUpperCase() == 'USER' || role == 'user';
+  bool get isFromAssistant => role?.toUpperCase() == 'AI' || role == 'assistant';
 }
 
 /// Request gửi tin nhắn đến AI

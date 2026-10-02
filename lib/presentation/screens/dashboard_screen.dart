@@ -53,43 +53,58 @@ class _DashboardScreenState extends State<DashboardScreen> {
     setState(() => _isLoading = true);
     try {
       final userId = await SessionManager.getUserId();
-      if (userId == null) return;
+      if (userId == null) {
+        debugPrint('[Dashboard] userId is null - not logged in');
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+      debugPrint('[Dashboard] Loading for userId=$userId, date=$_todayDate');
 
-      // Gọi song song tất cả API
-      final results = await Future.wait([
-        _apiService.getDailySummary(userId, _todayDate),
-        _apiService.getUserProfile(userId),
-        _apiService.getMealItems(userId: userId, date: _todayDate, mealType: 'BREAKFAST'),
-        _apiService.getMealItems(userId: userId, date: _todayDate, mealType: 'LUNCH'),
-        _apiService.getMealItems(userId: userId, date: _todayDate, mealType: 'SNACK'),
-        _apiService.getMealItems(userId: userId, date: _todayDate, mealType: 'DINNER'),
-      ]);
+      // Gọi từng API riêng lẻ - nếu 1 cái lỗi, các cái khác vẫn chạy
+      DailySummary summary = DailySummary.empty;
+      UserProfile? profile;
+      final Map<String, int> mealCals = {
+        'BREAKFAST': 0, 'LUNCH': 0, 'SNACK': 0, 'DINNER': 0,
+      };
 
-      final summary = results[0] as DailySummary;
-      final profile = results[1] as UserProfile;
-      final breakfast = results[2] as List<FoodEntryItem>;
-      final lunch = results[3] as List<FoodEntryItem>;
-      final snack = results[4] as List<FoodEntryItem>;
-      final dinner = results[5] as List<FoodEntryItem>;
+      try {
+        summary = await _apiService.getDailySummary(userId, _todayDate);
+        debugPrint('[Dashboard] summary: cal=${summary.totalCalories}, water=${summary.totalWaterMl}');
+      } catch (e) {
+        debugPrint('[Dashboard] getDailySummary ERROR: $e');
+      }
+
+      try {
+        profile = await _apiService.getUserProfile(userId);
+        debugPrint('[Dashboard] profile: goal=${profile.dailyCalorieGoal}, water=${profile.waterGoalMl}');
+      } catch (e) {
+        debugPrint('[Dashboard] getUserProfile ERROR: $e');
+      }
 
       int sumCal(List<FoodEntryItem> items) =>
           items.fold<double>(0.0, (sum, e) => sum + (e.calories ?? 0.0)).toInt();
 
+      for (final mealType in ['BREAKFAST', 'LUNCH', 'SNACK', 'DINNER']) {
+        try {
+          final items = await _apiService.getMealItems(
+            userId: userId, date: _todayDate, mealType: mealType,
+          );
+          mealCals[mealType] = sumCal(items);
+        } catch (e) {
+          debugPrint('[Dashboard] getMealItems($mealType) ERROR: $e');
+        }
+      }
 
       if (mounted) {
         setState(() {
           _summary = summary;
           _userProfile = profile;
-          _mealCalories = {
-            'BREAKFAST': sumCal(breakfast),
-            'LUNCH': sumCal(lunch),
-            'SNACK': sumCal(snack),
-            'DINNER': sumCal(dinner),
-          };
+          _mealCalories = mealCals;
           _isLoading = false;
         });
       }
     } catch (e) {
+      debugPrint('[Dashboard] _loadData unexpected ERROR: $e');
       if (mounted) setState(() => _isLoading = false);
     }
   }

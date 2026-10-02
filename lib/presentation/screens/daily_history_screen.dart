@@ -1,8 +1,73 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/utils/session_manager.dart';
+import '../../data/api/api_service.dart';
+import '../../data/models/daily_summary.dart';
 
-class DailyHistoryScreen extends StatelessWidget {
+class DailyHistoryScreen extends StatefulWidget {
   const DailyHistoryScreen({super.key});
+
+  @override
+  State<DailyHistoryScreen> createState() => _DailyHistoryScreenState();
+}
+
+class _DailyHistoryScreenState extends State<DailyHistoryScreen> {
+  final _apiService = ApiService();
+  bool _isLoading = true;
+  final List<Map<String, dynamic>> _historyData = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadHistory();
+  }
+
+  Future<void> _loadHistory() async {
+    setState(() => _isLoading = true);
+    try {
+      final userId = await SessionManager.getUserId();
+      if (userId == null) return;
+
+      final now = DateTime.now();
+      final List<Map<String, dynamic>> data = [];
+
+      // Fetch last 7 days
+      for (int i = 0; i < 7; i++) {
+        final date = now.subtract(Duration(days: i));
+        final dateStr = DateFormat('yyyy-MM-dd').format(date);
+        
+        final summary = await _apiService.getDailySummary(userId, dateStr);
+        data.add({
+          'date': date,
+          'summary': summary,
+        });
+      }
+
+      if (mounted) {
+        setState(() {
+          _historyData.clear();
+          _historyData.addAll(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      debugPrint('Load history error: $e');
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  String _formatDayName(DateTime date) {
+    final now = DateTime.now();
+    final difference = DateTime(now.year, now.month, now.day)
+        .difference(DateTime(date.year, date.month, date.day))
+        .inDays;
+    
+    if (difference == 0) return 'Hôm nay';
+    if (difference == 1) return 'Hôm qua';
+    
+    return DateFormat('EEEE', 'vi').format(date);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,23 +79,41 @@ class DailyHistoryScreen extends StatelessWidget {
         elevation: 0,
         centerTitle: false,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          children: [
-            _buildDailyCard('Hôm nay', '4 tháng 4, 2026', '1450', '1200', '3'),
-            _buildDailyCard('Hôm qua', '3 tháng 4, 2026', '2200', '2300', '4'),
-            _buildDailyCard('Thứ Năm', '2 tháng 4, 2026', '1880', '2100', '4'),
-            _buildDailyCard('Thứ Tư', '1 tháng 4, 2026', '2050', '1900', '4'),
-          ],
-        ),
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator(color: AppColors.blue600))
+          : RefreshIndicator(
+              onRefresh: _loadHistory,
+              color: AppColors.blue600,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16.0),
+                itemCount: _historyData.length,
+                itemBuilder: (context, index) {
+                  final item = _historyData[index];
+                  final date = item['date'] as DateTime;
+                  final summary = item['summary'] as DailySummary;
+                  
+                  return _buildDailyCard(
+                    dayName: _formatDayName(date),
+                    date: DateFormat('d MMMM, yyyy', 'vi').format(date),
+                    cal: (summary.totalCalories ?? 0).toInt().toString(),
+                    water: (summary.totalWaterMl ?? 0).toInt().toString(),
+                    meals: '-', // Meal count is not in DailySummary currently
+                  );
+                },
+              ),
+            ),
     );
   }
 
-  Widget _buildDailyCard(String dayName, String date, String cal, String water, String meals) {
+  Widget _buildDailyCard({
+    required String dayName, 
+    required String date, 
+    required String cal, 
+    required String water, 
+    required String meals,
+  }) {
     return Card(
-      elevation: 12,
+      elevation: 4,
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       child: Container(
@@ -103,7 +186,7 @@ class DailyHistoryScreen extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Meals Info
+                // Meals Info (Placeholder or fetched from other source if needed)
                 Expanded(
                   child: Container(
                     padding: const EdgeInsets.all(12),
@@ -121,18 +204,6 @@ class DailyHistoryScreen extends StatelessWidget {
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: 12),
-            
-            // View Details Button
-            OutlinedButton(
-              onPressed: () {},
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size(double.infinity, 48),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                side: const BorderSide(color: AppColors.gray300),
-              ),
-              child: const Text('Xem chi tiết', style: TextStyle(color: AppColors.gray700, fontSize: 14, fontWeight: FontWeight.bold)),
             ),
           ],
         ),

@@ -1,8 +1,69 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../core/theme/app_colors.dart';
 
-class SleepScreen extends StatelessWidget {
+class SleepScreen extends StatefulWidget {
   const SleepScreen({super.key});
+
+  @override
+  State<SleepScreen> createState() => _SleepScreenState();
+}
+
+class _SleepScreenState extends State<SleepScreen> {
+  int _timeRemaining = 1800; // 30 minutes in seconds
+  bool _isPlaying = false;
+  Timer? _timer;
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _formatTime(int seconds) {
+    int h = seconds ~/ 3600;
+    int m = (seconds % 3600) ~/ 60;
+    int s = seconds % 60;
+    return '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
+  }
+
+  void _toggleTimer() {
+    if (_isPlaying) {
+      _timer?.cancel();
+      setState(() => _isPlaying = false);
+    } else {
+      if (_timeRemaining == 0) _timeRemaining = 1800;
+      setState(() => _isPlaying = true);
+      _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
+        if (_timeRemaining > 0) {
+          setState(() => _timeRemaining--);
+        } else {
+          timer.cancel();
+          setState(() => _isPlaying = false);
+        }
+      });
+    }
+  }
+
+  void _resetTimer() {
+    _timer?.cancel();
+    setState(() {
+      _isPlaying = false;
+      _timeRemaining = 1800;
+    });
+  }
+
+  Future<void> _showTimePicker() async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: _timeRemaining ~/ 3600, minute: (_timeRemaining % 3600) ~/ 60),
+    );
+    if (picked != null) {
+      setState(() {
+        _timeRemaining = picked.hour * 3600 + picked.minute * 60;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +103,7 @@ class SleepScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Sat, Apr 18',
+                  'Hỗ trợ giấc ngủ sâu',
                   style: TextStyle(color: AppColors.white.withOpacity(0.6), fontSize: 13),
                 ),
                 
@@ -56,10 +117,10 @@ class SleepScreen extends StatelessWidget {
                     crossAxisSpacing: 12,
                     childAspectRatio: 0.9,
                     children: [
-                      _buildSoundCard(Icons.water_drop, 'Select Sound'),
-                      _buildSoundCard(Icons.flash_on, 'Select Sound'),
-                      _buildSoundCard(Icons.energy_savings_leaf, 'Select Sound'),
-                      _buildSoundCard(Icons.local_fire_department, 'Select Sound'),
+                      _buildSoundCard(Icons.water_drop, 'Tiếng mưa'),
+                      _buildSoundCard(Icons.flash_on, 'Tiếng sấm'),
+                      _buildSoundCard(Icons.energy_savings_leaf, 'Tiếng gió'),
+                      _buildSoundCard(Icons.local_fire_department, 'Lửa trại'),
                     ],
                   ),
                 ),
@@ -75,23 +136,23 @@ class SleepScreen extends StatelessWidget {
                   ),
                   child: Column(
                     children: [
-                      const Text(
-                        '00:30:00',
-                        style: TextStyle(color: AppColors.white, fontSize: 40, fontWeight: FontWeight.bold),
+                      Text(
+                        _formatTime(_timeRemaining),
+                        style: const TextStyle(color: AppColors.white, fontSize: 40, fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        '00:30:00',
+                        'Thời gian hẹn giờ',
                         style: TextStyle(color: AppColors.white.withOpacity(0.6), fontSize: 14),
                       ),
                       const SizedBox(height: 24),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildCircleButton(Icons.timer, Colors.white.withOpacity(0.1), 48),
+                          _buildCircleButton(Icons.timer, Colors.white.withOpacity(0.1), 48, _showTimePicker),
                           const SizedBox(width: 24),
-                          _buildCircleButton(Icons.play_arrow, const Color(0xFF6366F1), 64),
+                          _buildCircleButton(_isPlaying ? Icons.pause : Icons.play_arrow, const Color(0xFF6366F1), 64, _toggleTimer),
                           const SizedBox(width: 24),
-                          _buildCircleButton(Icons.refresh, Colors.white.withOpacity(0.1), 48),
+                          _buildCircleButton(Icons.refresh, Colors.white.withOpacity(0.1), 48, _resetTimer),
                         ],
                       ),
                     ],
@@ -100,7 +161,7 @@ class SleepScreen extends StatelessWidget {
                 
                 const SizedBox(height: 16),
                 Text(
-                  'Select sounds to start',
+                  '(Tính năng âm thanh đang phát triển cho phiên bản Web)',
                   style: TextStyle(color: AppColors.white.withOpacity(0.8), fontSize: 12, fontStyle: FontStyle.italic),
                 ),
                 const SizedBox(height: 12),
@@ -140,15 +201,18 @@ class SleepScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildCircleButton(IconData icon, Color color, double size) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
+  Widget _buildCircleButton(IconData icon, Color color, double size, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          color: color,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(icon, color: AppColors.white, size: size * 0.5),
       ),
-      child: Icon(icon, color: AppColors.white, size: size * 0.5),
     );
   }
 }

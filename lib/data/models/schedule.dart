@@ -25,7 +25,7 @@ class Schedule {
     return Schedule(
       scheduleId: json['scheduleId'] as int?,
       userId: json['userId'] as int?,
-      date: json['date'] as String?,
+      date: json['scheduleDate'] as String?,
       eventType: json['eventType'] as String?,
       title: json['title'] as String?,
       startTime: json['startTime'] as String?,
@@ -38,7 +38,7 @@ class Schedule {
     return {
       if (scheduleId != null) 'scheduleId': scheduleId,
       if (userId != null) 'userId': userId,
-      if (date != null) 'date': date,
+      if (date != null) 'scheduleDate': date,
       if (eventType != null) 'eventType': eventType,
       if (title != null) 'title': title,
       if (startTime != null) 'startTime': startTime,

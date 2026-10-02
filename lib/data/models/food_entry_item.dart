@@ -35,7 +35,7 @@ class FoodEntryItem {
 
   factory FoodEntryItem.fromJson(Map<String, dynamic> json) {
     return FoodEntryItem(
-      id: json['id'] as int?,
+      id: json['itemId'] as int?,
       userId: json['userId'] as int?,
       mealType: json['mealType'] as String?,
       date: json['date'] as String?,

@@ -3,6 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/session_manager.dart';
 import '../../data/api/api_service.dart';
 import '../../data/models/food_entry_item.dart';
+import 'ai_assistant_screen.dart';
 
 /// Màn hình Chi tiết Bữa ăn – Tương đương MealDetailActivity.java
 /// Sprint 3.2: Load danh sách món, xóa món
@@ -80,10 +81,11 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
     try {
       await _apiService.deleteMealItem(item.id!);
       _loadItems(); // Reload
-    } catch (_) {
+    } catch (e) {
+      debugPrint('[MealDetail] Delete item error: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Không thể xóa. Thử lại sau.')),
+          SnackBar(content: Text('Không thể xóa. Thử lại sau: $e')),
         );
       }
     }
@@ -229,14 +231,18 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                       style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     TextButton.icon(
-                      onPressed: () {
-                        // TODO Phase 4: Navigate to AI screen to add food
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Tính năng thêm món sẽ có ở Giai đoạn 4 (AI Assistant)')),
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const AiAssistantScreen()),
                         );
+                        // Tải lại danh sách món ăn khi quay lại
+                        if (mounted) {
+                          _loadItems();
+                        }
                       },
                       icon: const Icon(Icons.add, color: AppColors.blue600, size: 18),
-                      label: const Text('Thêm', style: TextStyle(color: AppColors.blue600, fontWeight: FontWeight.bold)),
+                      label: const Text('Thêm bằng AI', style: TextStyle(color: AppColors.blue600, fontWeight: FontWeight.bold)),
                     ),
                   ],
                 ),

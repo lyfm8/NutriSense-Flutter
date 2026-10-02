@@ -1,4 +1,4 @@
-import 'dart:io';
+
 import 'package:dio/dio.dart';
 import '../models/daily_summary.dart';
 import '../models/food_entry_item.dart';
@@ -197,12 +197,13 @@ class ApiService {
   /// Tương đương: @Multipart @POST trong Retrofit
   Future<List<NutrientDto>> analyzeImage({
     required int userId,
-    required File imageFile,
+    required List<int> imageBytes,
+    required String filename,
   }) async {
     final formData = FormData.fromMap({
-      'image': await MultipartFile.fromFile(
-        imageFile.path,
-        filename: 'food_image.jpg',
+      'image': MultipartFile.fromBytes(
+        imageBytes,
+        filename: filename,
       ),
     });
 

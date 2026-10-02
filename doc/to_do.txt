@@ -1,0 +1,4 @@
+1. lỗi tiếng việt trong chi tiết bữa ăn
+2. kiểm tra lại thông báo trong "lịch"
+3. kiểm tra lại tính năng gửi ảnh món ăn để tạo món ăn mới cho bữa ăn.
+4. test lại Bài Test Thể lực và Thư giãn & Giấc ngủ
