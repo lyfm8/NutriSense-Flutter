@@ -101,14 +101,24 @@ class _SurveyScreenState extends State<SurveyScreen> {
       final userId = await SessionManager.getUserId();
       if (userId == null) throw Exception('Không tìm thấy user');
 
+      // Convert dd/MM/yyyy (from UI) to yyyy-MM-dd (for Spring Boot API)
+      String? apiDate;
+      final dobStr = _dobController.text.trim();
+      if (dobStr.isNotEmpty) {
+        final parts = dobStr.split('/');
+        if (parts.length == 3) {
+          apiDate = '${parts[2]}-${parts[1]}-${parts[0]}';
+        } else {
+          apiDate = dobStr; // fallback
+        }
+      }
+
       final profile = UserProfile(
         displayName: name.isEmpty ? null : name,
         heightCm: height,
         weightKg: weight,
         gender: _selectedGender?.toLowerCase(),
-        dateOfBirth: _dobController.text.trim().isEmpty
-            ? null
-            : _dobController.text.trim(),
+        dateOfBirth: apiDate,
         activityLevel:
             _activityCodeMap[_selectedActivity ?? ''] ?? _selectedActivity,
         goal: _goalCodeMap[_selectedGoal ?? ''] ?? _selectedGoal,

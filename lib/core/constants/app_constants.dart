@@ -1,18 +1,28 @@
+import 'package:flutter/foundation.dart';
+
 /// Các hằng số toàn cục của ứng dụng NutriSense
 class AppConstants {
   AppConstants._();
 
   // ==================== API CONFIG ====================
+  // Dùng cho Web (localhost)
+  static const String baseUrlWeb = 'http://127.0.0.1:8081/';
+
   // Dùng cho Android Emulator (maps đến localhost của máy host)
   static const String baseUrlEmulator = 'http://10.0.2.2:8081/';
 
   // Dùng cho thiết bị thật (đổi thành IP máy chủ của bạn)
   static const String baseUrlDevice = 'http://192.168.1.55:8081/';
 
-  // Đặt thành true khi chạy trên emulator, false khi chạy thiết bị thật
+  // Đặt thành true khi chạy trên emulator, false khi chạy thiết bị thật (cho Mobile)
   static const bool useEmulator = true;
 
-  static String get baseUrl => useEmulator ? baseUrlEmulator : baseUrlDevice;
+  static String get baseUrl {
+    if (kIsWeb) {
+      return baseUrlWeb;
+    }
+    return useEmulator ? baseUrlEmulator : baseUrlDevice;
+  }
 
   // Timeout cho HTTP requests (giống Android cũ: 60 giây)
   static const int connectTimeoutSeconds = 60;

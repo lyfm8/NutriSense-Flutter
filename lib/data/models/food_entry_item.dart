@@ -71,6 +71,9 @@ class FoodEntryItem {
   String get displayName =>
       rawInput?.isNotEmpty == true ? rawInput! : (customName ?? 'Món ăn');
 
-  /// Calo hiển thị
+  /// Alias dùng trong MealDetailScreen
+  String get foodName => displayName;
+
+  /// Calo hiển thị (int)
   double get displayCalories => calories ?? caloriesPerServing ?? 0;
 }
