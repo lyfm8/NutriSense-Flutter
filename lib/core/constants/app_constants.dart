@@ -12,10 +12,10 @@ class AppConstants {
   static const String baseUrlEmulator = 'http://10.0.2.2:8081/';
 
   // Dùng cho thiết bị thật (đổi thành IP máy chủ của bạn)
-  static const String baseUrlDevice = 'http://192.168.1.15:8081/';
+  static const String baseUrlDevice = 'http://192.168.1.243:8081/';
 
   // Đặt thành true khi chạy trên emulator, false khi chạy thiết bị thật (cho Mobile)
-  static const bool useEmulator = false;
+  static const bool useEmulator = true;
 
   static String get baseUrl {
     if (kIsWeb) {

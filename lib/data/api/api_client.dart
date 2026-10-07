@@ -10,9 +10,13 @@ class ApiClient {
   ApiClient._();
 
   static Dio? _dio;
+  static String? _currentBaseUrl;
 
   static Dio get instance {
-    _dio ??= _createDio();
+    if (_dio == null || _currentBaseUrl != AppConstants.baseUrl) {
+      _currentBaseUrl = AppConstants.baseUrl;
+      _dio = _createDio();
+    }
     return _dio!;
   }
 

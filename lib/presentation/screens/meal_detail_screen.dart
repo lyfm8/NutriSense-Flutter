@@ -296,52 +296,55 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
+              width: 44,
+              height: 44,
               decoration: BoxDecoration(
                 color: AppColors.orange100,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.fastfood_outlined, color: AppColors.orange600, size: 24),
+              child: const Icon(Icons.fastfood_outlined, color: AppColors.orange600, size: 22),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     item.foodName,
-
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
                       color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
-                  const SizedBox(height: 4),
-                  Row(
+                  const SizedBox(height: 6),
+                  Wrap(
+                    spacing: 4,
+                    runSpacing: 4,
                     children: [
                       _buildMiniTag('P: ${(item.proteinG ?? 0).toStringAsFixed(1)}g', AppColors.orange600),
-                      const SizedBox(width: 6),
                       _buildMiniTag('C: ${(item.carbsG ?? 0).toStringAsFixed(1)}g', AppColors.amber600),
-                      const SizedBox(width: 6),
                       _buildMiniTag('F: ${(item.fatG ?? 0).toStringAsFixed(1)}g', AppColors.rose600),
                     ],
                   ),
                 ],
               ),
             ),
+            const SizedBox(width: 8),
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   item.displayCalories.toStringAsFixed(1),
                   style: const TextStyle(
-                    fontSize: 20,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: AppColors.blue600,
                   ),
@@ -349,7 +352,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                 Text('kcal', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodyMedium?.color)),
               ],
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 6),
             IconButton(
               onPressed: () => _deleteItem(item),
               icon: const Icon(Icons.delete_outline, color: AppColors.red600, size: 20),
@@ -383,12 +386,12 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
 
   Widget _buildMiniTag(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1.5),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(6),
       ),
-      child: Text(text, style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w600)),
+      child: Text(text, style: TextStyle(color: color, fontSize: 10.5, fontWeight: FontWeight.w600)),
     );
   }
 }
