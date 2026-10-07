@@ -7,6 +7,7 @@ class DailySummary {
   final double? totalFatG;
   final int? totalWaterMl;
   final String? date;
+  final int? numMeals; // <--- THÊM DÒNG NÀY
 
   const DailySummary({
     this.totalCalories,
@@ -15,6 +16,7 @@ class DailySummary {
     this.totalFatG,
     this.totalWaterMl,
     this.date,
+    this.numMeals, // <--- THÊM DÒNG NÀY
   });
 
   factory DailySummary.fromJson(Map<String, dynamic> json) {
@@ -25,6 +27,7 @@ class DailySummary {
       totalFatG: (json['totalFatG'] as num?)?.toDouble(),
       totalWaterMl: json['totalWaterMl'] as int?,
       date: json['date'] as String?,
+      numMeals: json['numMeals'] as int?, // <--- THÊM DÒNG NÀY
     );
   }
 
@@ -35,5 +38,6 @@ class DailySummary {
     totalCarbsG: 0,
     totalFatG: 0,
     totalWaterMl: 0,
+    numMeals: 0, // <--- THÊM DÒNG NÀY
   );
 }

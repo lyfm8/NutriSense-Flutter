@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "602435568303",
+    "project_id": "nitrisense",
+    "storage_bucket": "nitrisense.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:602435568303:android:2568381fe5f09973658a5a",
+        "android_client_info": {
+          "package_name": "hcmute.edu.vn.nitrisense"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "602435568303-38vt6473e4t9f8cbf77absoqgtt4bac4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "hcmute.edu.vn.nitrisense",
+            "certificate_hash": "e921463cb16154470d8285ec2e754b0d6b627454"
+          }
+        },
+        {
+          "client_id": "602435568303-t1cv1jobu5jk3u82gv2makiqabeul751.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "hcmute.edu.vn.nitrisense",
+            "certificate_hash": "f12bab0804f691fb343a7768239a0c23600c0910"
+          }
+        },
+        {
+          "client_id": "602435568303-prbkc9os272vrj9eh03288hr0d3ujo68.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAJeNKKrjtyO8CmUCpfCnuas9uJXlafawo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "602435568303-prbkc9os272vrj9eh03288hr0d3ujo68.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -11,7 +11,7 @@ class HistoryScreen extends StatelessWidget {
     return DefaultTabController(
       length: 2,
       child: Scaffold(
-        backgroundColor: AppColors.gray50,
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
         body: Column(
           children: [
             // Header with Gradient
@@ -19,7 +19,7 @@ class HistoryScreen extends StatelessWidget {
               padding: const EdgeInsets.only(top: 48, left: 20, right: 20, bottom: 0),
               decoration: const BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [AppColors.indigo600, AppColors.blue600],
+                  colors: [AppColors.blue600, AppColors.cyan600], // Sửa màu gradient cho giống bản cũ
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
@@ -39,11 +39,11 @@ class HistoryScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Theo dõi hành trình dinh dưỡng của bạn',
+                    'Theo dõi tiến trình của bạn',
                     style: TextStyle(color: AppColors.white.withOpacity(0.9), fontSize: 14),
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // TabBar
                   Container(
                     decoration: BoxDecoration(
@@ -59,15 +59,21 @@ class HistoryScreen extends StatelessWidget {
                       unselectedLabelColor: AppColors.white.withOpacity(0.6),
                       labelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       tabs: const [
-                        Tab(text: 'Theo ngày'),
-                        Tab(text: 'Báo cáo'),
+                        Tab(
+                          icon: Icon(Icons.calendar_today, size: 20),
+                          text: 'Theo ngày',
+                        ),
+                        Tab(
+                          icon: Icon(Icons.trending_up, size: 20),
+                          text: 'Báo cáo',
+                        ),
                       ],
                     ),
                   ),
                 ],
               ),
             ),
-            
+
             // TabBarView
             const Expanded(
               child: TabBarView(

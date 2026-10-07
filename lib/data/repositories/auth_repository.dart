@@ -141,6 +141,14 @@ class AuthRepository {
 
   /// Đăng xuất
   Future<void> signOut() async {
+    // 1. Ngắt kết nối hoàn toàn khỏi Google để ép hiện lại hộp thoại chọn tài khoản lần sau
+    try {
+      await _googleSignIn.disconnect();
+    } catch (_) {
+      // Bỏ qua lỗi nếu người dùng chưa từng đăng nhập bằng Google trong phiên này
+    }
+
+    // 2. Xóa các phiên đăng nhập còn lại
     await Future.wait([
       _firebaseAuth.signOut(),
       _googleSignIn.signOut(),

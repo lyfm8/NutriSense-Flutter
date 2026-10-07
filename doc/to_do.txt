@@ -1,4 +1,11 @@
-1. lỗi tiếng việt trong chi tiết bữa ăn
-2. kiểm tra lại thông báo trong "lịch"
-3. kiểm tra lại tính năng gửi ảnh món ăn để tạo món ăn mới cho bữa ăn.
-4. test lại Bài Test Thể lực và Thư giãn & Giấc ngủ
+
+
+
+
+-- nhắc nho trong lịch trình --xong
+-- thông baos (calo) hiên lại khi vào app
+-- chức năng voice -- xong
+-- chỉnh lại luồng phân tích --xong
+-- màn hình hdsd app (ng đăng kí moi) --xong
+-- validate data khảo  -- test trên đt
+-- đăng nhập gg -- xong

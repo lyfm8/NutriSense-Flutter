@@ -15,7 +15,10 @@ class FitnessTestScreen extends StatefulWidget {
 class _FitnessTestScreenState extends State<FitnessTestScreen> {
   final _apiService = ApiService();
   bool _isLoading = true;
-  List<ExerciseTest> _recentTests = [];
+  List<ExerciseTest> _allRecentTests = [];
+
+  // Biến lưu ngày đang được chọn để lọc
+  DateTime? _selectedFilterDate;
 
   @override
   void initState() {
@@ -28,11 +31,11 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
     try {
       final userId = await SessionManager.getUserId();
       if (userId == null) return;
-      
+
       final tests = await _apiService.getRecentFitnessTests(userId);
       if (mounted) {
         setState(() {
-          _recentTests = tests;
+          _allRecentTests = tests;
           _isLoading = false;
         });
       }
@@ -42,20 +45,50 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
     }
   }
 
+  // Hàm hiển thị DatePicker
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _selectedFilterDate ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: AppColors.blue600,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedFilterDate = picked;
+      });
+    }
+  }
+
   void _showAddTestDialog(String exerciseType) {
-    final ctrl1 = TextEditingController();
-    final ctrl2 = TextEditingController();
-    
+    final ctrl1 = TextEditingController(); // Dành cho số lần hoặc quãng đường
+    final ctrlMin = TextEditingController(); // Nhập Phút
+    final ctrlSec = TextEditingController(); // Nhập Giây
+
     String label1 = '';
-    String label2 = '';
-    
+    bool needsTime = false;
+
     if (exerciseType == 'Hít đất' || exerciseType == 'Gập bụng') {
       label1 = 'Số lần';
-    } else if (exerciseType == 'Chạy 1km') {
+      needsTime = true;
+      ctrlMin.text = '1'; // Mặc định 1 phút
+      ctrlSec.text = '0';
+    } else if (exerciseType == 'Chạy bộ') {
       label1 = 'Quãng đường (km)';
-      label2 = 'Thời gian (giây)';
+      needsTime = true;
+      ctrl1.text = '1'; // Mặc định 1km
     } else if (exerciseType == 'Plank') {
-      label1 = 'Thời gian (giây)';
+      needsTime = true; // Plank chỉ cần nhập thời gian
     }
 
     showDialog(
@@ -65,10 +98,51 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(controller: ctrl1, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: label1)),
-            if (label2.isNotEmpty) ...[
-              const SizedBox(height: 12),
-              TextField(controller: ctrl2, keyboardType: TextInputType.number, decoration: InputDecoration(labelText: label2)),
+            if (label1.isNotEmpty)
+              TextField(
+                  controller: ctrl1,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  decoration: InputDecoration(labelText: label1)
+              ),
+            if (needsTime) ...[
+              if (label1.isNotEmpty) const SizedBox(height: 16),
+              const Align(
+                alignment: Alignment.centerLeft,
+                child: Text('Thời gian thực hiện', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: ctrlMin,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        labelText: 'Phút',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                    child: Text(':', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: ctrlSec,
+                      keyboardType: TextInputType.number,
+                      textAlign: TextAlign.center,
+                      decoration: InputDecoration(
+                        labelText: 'Giây',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ]
           ],
         ),
@@ -80,30 +154,54 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
               final userId = await SessionManager.getUserId();
               if (userId == null) return;
 
-              int? pushUps, sitUps, runTime;
-              double? runDist;
+              // Xử lý thời gian tổng cộng (giây)
+              int m = int.tryParse(ctrlMin.text) ?? 0;
+              int s = int.tryParse(ctrlSec.text) ?? 0;
+              int totalSeconds = (m * 60) + s;
 
-              if (exerciseType == 'Hít đất') pushUps = int.tryParse(ctrl1.text);
-              if (exerciseType == 'Gập bụng') sitUps = int.tryParse(ctrl1.text);
-              if (exerciseType == 'Chạy 1km') {
-                runDist = double.tryParse(ctrl1.text);
-                runTime = int.tryParse(ctrl2.text);
+              if (totalSeconds <= 0 && needsTime) totalSeconds = 60; // Tránh lỗi chia cho 0
+
+              String apiTestType = 'others';
+              double apiValue = 0;
+              String apiUnit = '';
+              String apiNotes = '';
+
+              if (exerciseType == 'Hít đất') {
+                apiTestType = 'pushups';
+                apiValue = double.tryParse(ctrl1.text) ?? 0;
+                apiUnit = 'lần';
+                apiNotes = 'Hít đất trong $totalSeconds s';
+              } else if (exerciseType == 'Gập bụng') {
+                apiTestType = 'situps';
+                apiValue = double.tryParse(ctrl1.text) ?? 0;
+                apiUnit = 'lần';
+                apiNotes = 'Gập bụng trong $totalSeconds s';
+              } else if (exerciseType == 'Chạy bộ') {
+                apiTestType = 'running_1km';
+                apiValue = totalSeconds.toDouble(); // Lưu số giây chạy vào value
+                apiUnit = 'giây';
+                double dist = double.tryParse(ctrl1.text) ?? 0;
+                apiNotes = 'Chạy $dist km'; // Lưu cự ly vào ghi chú
+              } else if (exerciseType == 'Plank') {
+                apiTestType = 'plank_seconds';
+                apiValue = totalSeconds.toDouble();
+                apiUnit = 'giây';
+                apiNotes = 'Plank';
               }
-              if (exerciseType == 'Plank') runTime = int.tryParse(ctrl1.text); // Using runTime to store plank time temporarily
 
               final test = ExerciseTest(
                 userId: userId,
                 testDate: DateTime.now().toIso8601String().split('T')[0],
-                pushUps: pushUps,
-                sitUps: sitUps,
-                runDistanceKm: runDist,
-                runTimeSeconds: runTime,
-                notes: exerciseType,
+                testType: apiTestType,
+                value: apiValue,
+                unit: apiUnit,
+                notes: apiNotes,
               );
 
               setState(() => _isLoading = true);
               try {
                 await _apiService.logFitnessTest(test);
+                _selectedFilterDate = null; // Reset lọc để hiển thị ngay data mới
                 _loadRecentTests();
               } catch (e) {
                 debugPrint('Log test error: $e');
@@ -117,8 +215,84 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
     );
   }
 
+  // Trích xuất số từ chuỗi notes (VD: "Hít đất trong 60 s" -> 60)
+  double _extractNumberFromNotes(String notes) {
+    final RegExp regExp = RegExp(r'([\d.]+)');
+    final match = regExp.firstMatch(notes);
+    if (match != null) {
+      return double.tryParse(match.group(1) ?? '0') ?? 0;
+    }
+    return 0;
+  }
+
+  // HÀM ĐÁNH GIÁ CHUẨN
+  Map<String, dynamic> _getEvaluation(ExerciseTest test) {
+    String type = test.testType ?? '';
+    double val = test.value ?? 0;
+    String notes = test.notes ?? '';
+
+    String rating = 'Chưa rõ';
+    Color color = AppColors.gray500;
+
+    if (type == 'pushups') {
+      double timeSeconds = _extractNumberFromNotes(notes);
+      if (timeSeconds <= 0) timeSeconds = 60;
+      double normalizedReps = (val / timeSeconds) * 60; // Chuẩn hóa về 1 phút
+
+      if (normalizedReps >= 40) { rating = 'Xuất sắc'; color = Colors.green; }
+      else if (normalizedReps >= 30) { rating = 'Tốt'; color = Colors.blue; }
+      else if (normalizedReps >= 20) { rating = 'Trung bình'; color = Colors.orange; }
+      else { rating = 'Yếu'; color = Colors.red; }
+    }
+    else if (type == 'situps') {
+      double timeSeconds = _extractNumberFromNotes(notes);
+      if (timeSeconds <= 0) timeSeconds = 60;
+      double normalizedReps = (val / timeSeconds) * 60;
+
+      if (normalizedReps >= 45) { rating = 'Xuất sắc'; color = Colors.green; }
+      else if (normalizedReps >= 35) { rating = 'Tốt'; color = Colors.blue; }
+      else if (normalizedReps >= 25) { rating = 'Trung bình'; color = Colors.orange; }
+      else { rating = 'Yếu'; color = Colors.red; }
+    }
+    else if (type == 'plank_seconds') {
+      if (val >= 120) { rating = 'Xuất sắc'; color = Colors.green; }
+      else if (val >= 90) { rating = 'Tốt'; color = Colors.blue; }
+      else if (val >= 45) { rating = 'Trung bình'; color = Colors.orange; }
+      else { rating = 'Yếu'; color = Colors.red; }
+    }
+    else if (type == 'running_1km' || notes.contains('Chạy')) {
+      double distKm = _extractNumberFromNotes(notes);
+      if (distKm <= 0) distKm = 1.0;
+      if (val > 0) {
+        double pace = val / distKm; // Thời gian cho 1km
+        if (pace <= 270) { rating = 'Xuất sắc'; color = Colors.green; }
+        else if (pace <= 360) { rating = 'Tốt'; color = Colors.blue; }
+        else if (pace <= 450) { rating = 'Trung bình'; color = Colors.orange; }
+        else { rating = 'Yếu'; color = Colors.red; }
+      }
+    }
+
+    return {'rating': rating, 'color': color};
+  }
+
+  // Hàm chuyển đổi giây thành chuỗi Phút:Giây thân thiện
+  String _formatTimeFromSeconds(int totalSecs) {
+    int m = totalSecs ~/ 60;
+    int s = totalSecs % 60;
+    if (m > 0 && s > 0) return '$m phút $s giây';
+    if (m > 0) return '$m phút';
+    return '$s giây';
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Lọc danh sách theo ngày
+    List<ExerciseTest> displayTests = _allRecentTests;
+    if (_selectedFilterDate != null) {
+      String filterDateStr = DateFormat('yyyy-MM-dd').format(_selectedFilterDate!);
+      displayTests = displayTests.where((test) => test.testDate == filterDateStr).toList();
+    }
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -159,7 +333,7 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
               ),
             ),
           ),
-          
+
           SliverPadding(
             padding: const EdgeInsets.all(16),
             sliver: SliverGrid(
@@ -170,14 +344,14 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
                 childAspectRatio: 1.1,
               ),
               delegate: SliverChildListDelegate([
-                _buildExerciseCard('Hít đất', 'Số lần hít đất liên tục', Icons.fitness_center, AppColors.blue600, () => _showAddTestDialog('Hít đất')),
-                _buildExerciseCard('Chạy 1km', 'Thời gian chạy 1km', Icons.directions_run, AppColors.cyan600, () => _showAddTestDialog('Chạy 1km')),
-                _buildExerciseCard('Plank', 'Thời gian giữ tư thế plank', Icons.timer, AppColors.indigo400, () => _showAddTestDialog('Plank')),
-                _buildExerciseCard('Gập bụng', 'Số lần gập bụng / 1 phút', Icons.trending_up, AppColors.indigo600, () => _showAddTestDialog('Gập bụng')),
+                _buildExerciseCard('Hít đất', 'Sức mạnh thân trên', Icons.fitness_center, AppColors.blue600, () => _showAddTestDialog('Hít đất')),
+                _buildExerciseCard('Chạy bộ', 'Kiểm tra tim mạch', Icons.directions_run, AppColors.cyan600, () => _showAddTestDialog('Chạy bộ')),
+                _buildExerciseCard('Plank', 'Sức bền cơ lõi', Icons.timer, AppColors.indigo400, () => _showAddTestDialog('Plank')),
+                _buildExerciseCard('Gập bụng', 'Sức bền cơ bụng', Icons.trending_up, AppColors.indigo600, () => _showAddTestDialog('Gập bụng')),
               ]),
             ),
           ),
-          
+
           SliverToBoxAdapter(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -185,42 +359,136 @@ class _FitnessTestScreenState extends State<FitnessTestScreen> {
                 elevation: 4,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Text(
-                        'Lịch sử bài test',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Lịch sử bài test',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                          ),
+                          // Nút Lọc theo ngày
+                          InkWell(
+                            onTap: () => _selectDate(context),
+                            borderRadius: BorderRadius.circular(8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _selectedFilterDate != null ? AppColors.blue100 : AppColors.gray100,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 16, color: _selectedFilterDate != null ? AppColors.blue600 : AppColors.textSecondary),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _selectedFilterDate != null ? DateFormat('dd/MM').format(_selectedFilterDate!) : 'Tất cả',
+                                    style: TextStyle(
+                                        color: _selectedFilterDate != null ? AppColors.blue600 : AppColors.textSecondary,
+                                        fontWeight: FontWeight.bold
+                                    ),
+                                  ),
+                                  if (_selectedFilterDate != null) ...[
+                                    const SizedBox(width: 4),
+                                    GestureDetector(
+                                      onTap: () => setState(() => _selectedFilterDate = null),
+                                      child: const Icon(Icons.close, size: 16, color: AppColors.blue600),
+                                    )
+                                  ]
+                                ],
+                              ),
+                            ),
+                          )
+                        ],
                       ),
                     ),
                     if (_isLoading)
                       const Padding(
                         padding: EdgeInsets.all(32.0),
-                        child: Center(child: CircularProgressIndicator()),
+                        child: Center(child: CircularProgressIndicator(color: AppColors.blue600)),
                       )
-                    else if (_recentTests.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.all(32.0),
-                        child: Center(child: Text('Chưa có dữ liệu bài test nào.')),
+                    else if (displayTests.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.all(32.0),
+                        child: Center(
+                            child: Text(
+                              _selectedFilterDate != null ? 'Không có dữ liệu trong ngày này.' : 'Chưa có dữ liệu bài test nào.',
+                              style: const TextStyle(color: AppColors.textSecondary),
+                            )
+                        ),
                       )
                     else
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: _recentTests.length,
+                        itemCount: displayTests.length,
                         itemBuilder: (context, index) {
-                          final test = _recentTests[index];
+                          final test = displayTests[index];
+
+                          // Tạo chuỗi hiển thị chi tiết thân thiện
                           String details = '';
-                          if (test.pushUps != null) details += 'Hít đất: ${test.pushUps} lần ';
-                          if (test.sitUps != null) details += 'Gập bụng: ${test.sitUps} lần ';
-                          if (test.runDistanceKm != null) details += 'Chạy: ${test.runDistanceKm}km ';
-                          if (test.runTimeSeconds != null) details += 'Thời gian: ${test.runTimeSeconds}s';
-                          
+                          if (test.unit == 'giây') {
+                            String timeStr = _formatTimeFromSeconds(test.value?.toInt() ?? 0);
+                            if (test.testType == 'running_1km') {
+                              details = '${test.notes} trong $timeStr';
+                            } else {
+                              details = timeStr;
+                            }
+                          } else {
+                            details = '${test.value?.toInt() ?? 0} ${test.unit ?? ''}';
+                            if (test.notes != null && test.notes!.contains('trong')) {
+                              int totalSecs = _extractNumberFromNotes(test.notes!).toInt();
+                              String timeStr = _formatTimeFromSeconds(totalSecs);
+                              details += ' (trong $timeStr)';
+                            }
+                          }
+
+                          // Lấy kết quả đánh giá
+                          final eval = _getEvaluation(test);
+
                           return ListTile(
-                            leading: const CircleAvatar(backgroundColor: AppColors.blue100, child: Icon(Icons.history, color: AppColors.blue600)),
-                            title: Text(test.notes ?? 'Bài test', style: const TextStyle(fontWeight: FontWeight.bold)),
-                            subtitle: Text(details.trim().isEmpty ? 'Không có dữ liệu chi tiết' : details),
-                            trailing: Text(test.testDate ?? '', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                            leading: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                  color: AppColors.gray100,
+                                  borderRadius: BorderRadius.circular(10)
+                              ),
+                              child: Icon(
+                                  test.testType == 'pushups' ? Icons.fitness_center :
+                                  (test.testType == 'running_1km' || (test.notes?.contains('Chạy') ?? false)) ? Icons.directions_run :
+                                  test.testType == 'plank_seconds' ? Icons.timer : Icons.trending_up,
+                                  color: eval['color']
+                              ),
+                            ),
+                            title: Text(test.notes?.split(' trong').first ?? 'Bài test', style: const TextStyle(fontWeight: FontWeight.bold)),
+                            subtitle: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const SizedBox(height: 4),
+                                Text(details, style: const TextStyle(color: AppColors.textPrimary)),
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: (eval['color'] as Color).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(4),
+                                    border: Border.all(color: eval['color'] as Color),
+                                  ),
+                                  child: Text(
+                                    eval['rating'],
+                                    style: TextStyle(color: eval['color'] as Color, fontSize: 11, fontWeight: FontWeight.bold),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            trailing: Text(
+                                test.testDate != null ? DateFormat('dd/MM/yyyy').format(DateTime.parse(test.testDate!)) : '',
+                                style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)
+                            ),
+                            isThreeLine: true,
                           );
                         },
                       ),

@@ -67,9 +67,9 @@ class FoodEntryItem {
     };
   }
 
-  /// Tên hiển thị (ưu tiên rawInput, sau đó customName)
+  /// Tên hiển thị (ưu tiên customName = tên món, sau đó rawInput)
   String get displayName =>
-      rawInput?.isNotEmpty == true ? rawInput! : (customName ?? 'Món ăn');
+      customName?.isNotEmpty == true ? customName! : (rawInput ?? 'Món ăn');
 
   /// Alias dùng trong MealDetailScreen
   String get foodName => displayName;

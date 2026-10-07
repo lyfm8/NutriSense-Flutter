@@ -1,4 +1,3 @@
-
 import 'package:dio/dio.dart';
 import '../models/daily_summary.dart';
 import '../models/food_entry_item.dart';
@@ -11,7 +10,7 @@ import '../models/dashboard_dto.dart';
 import '../models/exercise_test.dart';
 import '../models/reminder_response.dart';
 import 'api_client.dart';
-
+import '../models/ai_analyze_result.dart'; // Thêm dòng import này ở đầu file
 /// Tập hợp tất cả API calls của ứng dụng
 /// Tương đương: ApiService.java (interface Retrofit)
 ///
@@ -151,6 +150,20 @@ class ApiService {
     return Schedule.fromJson(response.data as Map<String, dynamic>);
   }
 
+  /// PUT /api/schedules/{id}
+  Future<Schedule> updateSchedule(int id, Schedule schedule) async {
+    final response = await _dio.put(
+      'api/schedules/$id',
+      data: schedule.toJson(),
+    );
+    return Schedule.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  /// DELETE /api/schedules/{id}
+  Future<void> deleteSchedule(int id) async {
+    await _dio.delete('api/schedules/$id');
+  }
+
   // ==================== CHAT / AI ====================
 
   /// GET /api/chat/history?userId=
@@ -267,5 +280,49 @@ class ApiService {
       queryParameters: {'userId': userId},
     );
     return ReminderResponse.fromJson(response.data as Map<String, dynamic>);
+  }
+
+  //Phan tich text
+  Future<AiAnalyzeResult> analyzeText({required int userId, required String userInput}) async {
+    final response = await _dio.post('/api/ai/analyze-text?userId=$userId', data: {
+      'userInput': userInput,
+    });
+    return AiAnalyzeResult.fromJson(response.data);
+  }
+  // API Lưu món ăn vào nhật ký từ kết quả AI
+  Future<void> saveMealItemDirectly({
+    required int userId,
+    required String mealType,
+    required FoodItem foodItem,
+    required String rawInput,
+  }) async {
+    // Tận dụng logMealBatch để lưu - gửi ĐỦ tên món, gram, vi chất, câu nhập gốc
+    final logItem = NutrientLogItem(
+      foodName: foodItem.name,
+      calories: foodItem.calories,
+      proteinG: foodItem.proteinG,
+      carbsG: foodItem.carbsG,
+      fatG: foodItem.fatG,
+      estimatedWeightG: foodItem.servingSize,
+      fiberG: foodItem.fiberG,
+      vitaminAMcg: foodItem.vitaminAMcg,
+      vitaminB12Mcg: foodItem.vitaminB12Mcg,
+      vitaminCMg: foodItem.vitaminCMg,
+      vitaminDMcg: foodItem.vitaminDMcg,
+      ironMg: foodItem.ironMg,
+      calciumMg: foodItem.calciumMg,
+      potassiumMg: foodItem.potassiumMg,
+      rawInput: rawInput,
+      source: 'text',
+    );
+
+    final request = MealBatchLogRequest(
+      userId: userId,
+      date: DateTime.now().toIso8601String().split('T')[0],
+      mealType: mealType,
+      items: [logItem],
+    );
+
+    await logMealBatch(request);
   }
 }

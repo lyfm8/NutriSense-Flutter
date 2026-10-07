@@ -1,17 +1,17 @@
 /// Response nhắc nhở hàng ngày từ AI
-/// Tương đương: ReminderResponse.java
+/// Tương đương: ReminderResponseDto.java
 class ReminderResponse {
-  final String? message;
-  final String? summary;
+  final String? notificationText;
+  final String? detailText;
 
-  const ReminderResponse({this.message, this.summary});
+  const ReminderResponse({this.notificationText, this.detailText});
 
   factory ReminderResponse.fromJson(Map<String, dynamic> json) {
     return ReminderResponse(
-      message: json['message'] as String?,
-      summary: json['summary'] as String?,
+      notificationText: json['notificationText'] as String?,
+      detailText: json['detailText'] as String?,
     );
   }
 
-  String get displayText => message ?? summary ?? '';
+  String get displayText => detailText ?? notificationText ?? '';
 }

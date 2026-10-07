@@ -3,7 +3,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/utils/session_manager.dart';
 import '../../data/api/api_service.dart';
 import '../../data/models/food_entry_item.dart';
-import 'ai_assistant_screen.dart';
+import 'ai_analysis_screen.dart';
 
 /// Màn hình Chi tiết Bữa ăn – Tương đương MealDetailActivity.java
 /// Sprint 3.2: Load danh sách món, xóa món
@@ -92,8 +92,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   }
 
   // Tổng dinh dưỡng
-  int get _totalCalories => _items.fold<double>(0.0, (sum, e) => sum + (e.calories ?? 0.0)).toInt();
-
+  int get _totalCalories => _items.fold<double>(0.0, (sum, e) => sum + e.displayCalories).toInt();
   double get _totalProtein => _items.fold(0.0, (sum, e) => sum + (e.proteinG ?? 0.0));
   double get _totalCarbs => _items.fold(0.0, (sum, e) => sum + (e.carbsG ?? 0.0));
   double get _totalFat => _items.fold(0.0, (sum, e) => sum + (e.fatG ?? 0.0));
@@ -107,7 +106,7 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.gray50,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
       body: RefreshIndicator(
         onRefresh: _loadItems,
         color: AppColors.blue600,
@@ -228,13 +227,13 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                   children: [
                     Text(
                       'Chi tiết món ăn (${_items.length})',
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 18, fontWeight: FontWeight.bold),
+                      style: TextStyle(color: Theme.of(context).textTheme.bodyLarge?.color, fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     TextButton.icon(
                       onPressed: () async {
                         await Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (context) => const AiAssistantScreen()),
+                          MaterialPageRoute(builder: (context) => const AiAnalysisScreen()),
                         );
                         // Tải lại danh sách món ăn khi quay lại
                         if (mounted) {
@@ -317,20 +316,20 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
                   Text(
                     item.foodName,
 
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
+                      color: Theme.of(context).textTheme.bodyLarge?.color,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      _buildMiniTag('P: ${(item.proteinG ?? 0).toStringAsFixed(0)}g', AppColors.orange600),
+                      _buildMiniTag('P: ${(item.proteinG ?? 0).toStringAsFixed(1)}g', AppColors.orange600),
                       const SizedBox(width: 6),
-                      _buildMiniTag('C: ${(item.carbsG ?? 0).toStringAsFixed(0)}g', AppColors.amber600),
+                      _buildMiniTag('C: ${(item.carbsG ?? 0).toStringAsFixed(1)}g', AppColors.amber600),
                       const SizedBox(width: 6),
-                      _buildMiniTag('F: ${(item.fatG ?? 0).toStringAsFixed(0)}g', AppColors.rose600),
+                      _buildMiniTag('F: ${(item.fatG ?? 0).toStringAsFixed(1)}g', AppColors.rose600),
                     ],
                   ),
                 ],
@@ -340,14 +339,14 @@ class _MealDetailScreenState extends State<MealDetailScreen> {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Text(
-                  '${item.calories ?? 0}',
+                  item.displayCalories.toStringAsFixed(1),
                   style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: AppColors.blue600,
                   ),
                 ),
-                const Text('kcal', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                Text('kcal', style: TextStyle(fontSize: 11, color: Theme.of(context).textTheme.bodyMedium?.color)),
               ],
             ),
             const SizedBox(width: 8),
